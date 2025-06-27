@@ -18,6 +18,7 @@ const MemeEditor = () => {
   const [gifFrames, setGifFrames] = useState([]);
   const [gifDelay, setGifDelay] = useState(500); // ms between frames
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+  const [activeTab, setActiveTab] = useState('image'); // 'image' hoặc 'gif'
 
   // Fetch stickers từ API với error handling tốt hơn
   const fetchStickers = async (query = 'happy') => {
@@ -671,14 +672,44 @@ convert -delay ${Math.round(gifDelay/10)} -loop 0 frame-*.png output.gif`;
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">
-          🎨 Meme Generator Pro
+          🎨 Meme Generator
         </h1>
         <p className="text-center text-gray-600 mb-6">
-          Tạo meme ảnh tĩnh và GIF động một cách dễ dàng! Tải ảnh lên, thêm text, sticker và hiệu ứng.
+          Tạo meme của bạn một cách dễ dàng! Tải ảnh lên, thêm text, sticker và hiệu ứng.
         </p>
         
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="flex justify-center">
+            <div className="bg-white rounded-lg p-1 shadow">
+              <button
+                onClick={() => setActiveTab('image')}
+                className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                  activeTab === 'image'
+                    ? 'bg-blue-500 text-white shadow'
+                    : 'text-gray-600 hover:text-blue-500'
+                }`}
+              >
+                🖼️ Tạo ảnh tĩnh
+              </button>
+              <button
+                onClick={() => setActiveTab('gif')}
+                className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                  activeTab === 'gif'
+                    ? 'bg-purple-500 text-white shadow'
+                    : 'text-gray-600 hover:text-purple-500'
+                }`}
+              >
+                🎬 Tạo GIF động
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Tab Content */}
+        {activeTab === 'image' && (
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Thanh công cụ */}
+          {/* Thanh công cụ cho ảnh tĩnh */}
           <div className="lg:w-1/3 space-y-6">
             {/* Tải ảnh */}
             <div className="bg-white p-4 rounded-lg shadow">
@@ -740,7 +771,7 @@ convert -delay ${Math.round(gifDelay/10)} -loop 0 frame-*.png output.gif`;
 
             {/* Stickers */}
             <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-3">🎭 Stickers & Emoji</h3>
+              <h3 className="text-lg font-semibold mb-3">Stickers & Emoji</h3>
               
               {/* Search box cho stickers */}
               <div className="mb-3">
@@ -805,7 +836,7 @@ convert -delay ${Math.round(gifDelay/10)} -loop 0 frame-*.png output.gif`;
 
             {/* Hiệu ứng */}
             <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-3">🎨 Hiệu ứng</h3>
+              <h3 className="text-lg font-semibold mb-3">Hiệu ứng</h3>
               <div className="space-y-2">
                 {filters.map((filter) => (
                   <button
@@ -818,6 +849,147 @@ convert -delay ${Math.round(gifDelay/10)} -loop 0 frame-*.png output.gif`;
                     }`}
                   >
                     {filter.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Thao tác chung */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-3">⚙️ Thao tác</h3>
+              <div className="space-y-2">
+                <button
+                  onClick={duplicateSelected}
+                  className="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
+                >
+                  📋 Sao chép đối tượng
+                </button>
+                <button
+                  onClick={deleteSelected}
+                  className="w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
+                >
+                  🗑️ Xóa đối tượng
+                </button>
+                <button
+                  onClick={clearCanvas}
+                  className="w-full bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
+                >
+                  🧹 Xóa tất cả
+                </button>
+                <button
+                  onClick={exportImage}
+                  className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+                >
+                  📥 Tải xuống
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Khu vực canvas cho ảnh tĩnh */}
+          <div className="lg:w-2/3">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold text-blue-800 mb-2">🎯 Hướng dẫn tạo ảnh:</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• Kéo thả để di chuyển đối tượng</li>
+                  <li>• Click để chọn, kéo góc để thay đổi kích thước</li>
+                  <li>• Nhấn Delete/Backspace để xóa đối tượng đã chọn</li>
+                  <li>• Chọn ảnh trước khi áp dụng hiệu ứng</li>
+                  <li>• Canvas tự động thay đổi kích thước theo màn hình</li>
+                  <li>• Kích thước hiện tại: {canvasSize.width} x {canvasSize.height}px</li>
+                  <li>• Số đối tượng trên canvas: {objectCount}</li>
+                </ul>
+              </div>
+              <div className="canvas-wrapper">
+                <canvas
+                  ref={canvasRef}
+                  className="border border-gray-300 max-w-full rounded-lg shadow-sm"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
+
+        {/* Tab GIF */}
+        {activeTab === 'gif' && (
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Thanh công cụ cho GIF */}
+          <div className="lg:w-1/3 space-y-6">
+            {/* Tải ảnh cho GIF */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-3">📤 Tải ảnh</h3>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="w-full p-2 border border-gray-300 rounded"
+              />
+            </div>
+
+            {/* Thêm văn bản cho GIF */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-3">✏️ Thêm văn bản</h3>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder="Nhập văn bản..."
+                  className="w-full p-2 border border-gray-300 rounded"
+                />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Màu chữ
+                    </label>
+                    <input
+                      type="color"
+                      value={textColor}
+                      onChange={(e) => setTextColor(e.target.value)}
+                      className="w-full h-10 border border-gray-300 rounded"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kích thước
+                    </label>
+                    <input
+                      type="range"
+                      min="12"
+                      max="72"
+                      value={fontSize}
+                      onChange={(e) => setFontSize(Number(e.target.value))}
+                      className="w-full"
+                    />
+                    <span className="text-xs text-gray-500">{fontSize}px</span>
+                  </div>
+                </div>
+                <button
+                  onClick={addText}
+                  className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+                >
+                  Thêm văn bản
+                </button>
+              </div>
+            </div>
+
+            {/* Stickers cho GIF - thu gọn */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-3">🎭 Stickers & Emoji</h3>
+              <div className="text-sm text-gray-600 mb-2">
+                Thêm stickers để tạo animation đẹp hơn!
+              </div>
+              <div className="emoji-container" style={{maxHeight: '120px'}}>
+                {emojiStickers.slice(0, 18).map((sticker, index) => (
+                  <button
+                    key={index}
+                    onClick={() => addSticker(sticker)}
+                    className="emoji-square-btn"
+                    title={`Emoji: ${sticker}`}
+                  >
+                    {sticker}
                   </button>
                 ))}
               </div>
@@ -983,51 +1155,20 @@ convert -delay ${Math.round(gifDelay/10)} -loop 0 frame-*.png output.gif`;
                 )}
               </div>
             </div>
-
-            {/* Thao tác chung */}
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-3">⚙️ Thao tác</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={duplicateSelected}
-                  className="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
-                >
-                  📋 Sao chép đối tượng
-                </button>
-                <button
-                  onClick={deleteSelected}
-                  className="w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
-                >
-                  🗑️ Xóa đối tượng
-                </button>
-                <button
-                  onClick={clearCanvas}
-                  className="w-full bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
-                >
-                  🧹 Xóa tất cả
-                </button>
-                <button
-                  onClick={exportImage}
-                  className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-                >
-                  📥 Tải xuống ảnh
-                </button>
-              </div>
-            </div>
           </div>
 
-          {/* Khu vực canvas */}
+          {/* Khu vực canvas cho GIF */}
           <div className="lg:w-2/3">
             <div className="bg-white p-4 rounded-lg shadow">
-              <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-                <h4 className="font-semibold text-blue-800 mb-2">🎯 Hướng dẫn sử dụng:</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• <strong>Ảnh tĩnh:</strong> Tải ảnh, thêm text/sticker, áp dụng hiệu ứng, tải xuống</li>
-                  <li>• <strong>GIF động:</strong> Sử dụng Auto Generate hoặc thêm frame thủ công</li>
-                  <li>• Kéo thả để di chuyển đối tượng, kéo góc để thay đổi kích thước</li>
-                  <li>• Nhấn Delete/Backspace để xóa đối tượng đã chọn</li>
-                  <li>• Chọn ảnh trước khi áp dụng hiệu ứng</li>
-                  <li>• Canvas: {canvasSize.width} x {canvasSize.height}px • Đối tượng: {objectCount}</li>
+              <div className="mb-4 p-3 bg-purple-50 rounded-lg">
+                <h4 className="font-semibold text-purple-800 mb-2">🎬 Hướng dẫn tạo GIF:</h4>
+                <ul className="text-sm text-purple-700 space-y-1">
+                  <li>• Thêm ảnh, text, stickers để tạo content</li>
+                  <li>• Chọn hiệu ứng Auto Generate để tạo GIF ngay lập tức</li>
+                  <li>• Hoặc thêm frame thủ công để tự thiết kế animation</li>
+                  <li>• Điều chỉnh tốc độ GIF bằng slider</li>
+                  <li>• Canvas: {canvasSize.width} x {canvasSize.height}px</li>
+                  <li>• Đối tượng: {objectCount} • Frames: {gifFrames.length}</li>
                 </ul>
               </div>
               <div className="canvas-wrapper">
@@ -1039,6 +1180,7 @@ convert -delay ${Math.round(gifDelay/10)} -loop 0 frame-*.png output.gif`;
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
