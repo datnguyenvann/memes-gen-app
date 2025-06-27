@@ -11,8 +11,9 @@ const MemeEditor = () => {
   const [apiStickers, setApiStickers] = useState([]);
   const [loadingStickers, setLoadingStickers] = useState(false);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
+  const [objectCount, setObjectCount] = useState(0);
 
-  // Fetch stickers từ API
+  // Fetch stickers từ API với error handling tốt hơn
   const fetchStickers = async (query = 'happy') => {
     setLoadingStickers(true);
     try {
@@ -21,20 +22,29 @@ const MemeEditor = () => {
       const response = await fetch(
         `https://api.giphy.com/v1/stickers/search?api_key=${API_KEY}&q=${query}&limit=50&rating=g`
       );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
-      if (data.data) {
+      if (data.data && data.data.length > 0) {
         const stickers = data.data.map(item => ({
           id: item.id,
           url: item.images.fixed_height_small.url,
           title: item.title
         }));
         setApiStickers(stickers);
+      } else {
+        setApiStickers([]);
+        console.warn('Không tìm thấy stickers cho từ khóa:', query);
       }
     } catch (error) {
       console.error('Error fetching stickers:', error);
       // Fallback to emoji if API fails
       setApiStickers([]);
+      alert('Không thể tải stickers từ API. Vui lòng thử lại sau hoặc sử dụng emoji.');
     }
     setLoadingStickers(false);
   };
@@ -102,6 +112,14 @@ const MemeEditor = () => {
 
     setCanvas(canvasInstance);
 
+    // Theo dõi thay đổi trên canvas để cập nhật object count
+    const updateObjectCount = () => {
+      setObjectCount(canvasInstance.getObjects().length);
+    };
+
+    canvasInstance.on('object:added', updateObjectCount);
+    canvasInstance.on('object:removed', updateObjectCount);
+
     // Xử lý phím tắt
     const handleKeyPress = (e) => {
       if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -138,22 +156,35 @@ const MemeEditor = () => {
   // Tải ảnh từ máy
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
-    if (file) {
+    if (file && canvas) {
       const reader = new FileReader();
       reader.onload = (e) => {
         fabric.Image.fromURL(e.target.result, (img) => {
           // Thay đổi kích thước ảnh cho vừa canvas động
-          const scale = Math.min(canvasSize.width / img.width, canvasSize.height / img.height);
+          const scale = Math.min(
+            (canvasSize.width * 0.8) / img.width, 
+            (canvasSize.height * 0.8) / img.height
+          );
           
           img.scale(scale);
           img.set({
             left: (canvasSize.width - img.width * scale) / 2,
-            top: (canvasSize.height - img.height * scale) / 2
+            top: (canvasSize.height - img.height * scale) / 2,
+            selectable: true,
+            evented: true,
+            lockUniScaling: false
           });
 
-          canvas.clear();
-          canvas.add(img);
-          canvas.centerObject(img);
+          // Xóa chỉ ảnh cũ (background), giữ lại text và stickers
+          const objects = canvas.getObjects();
+          objects.forEach(obj => {
+            if (obj.type === 'image') {
+              canvas.remove(obj);
+            }
+          });
+
+          // Thêm ảnh mới làm background (thêm vào đầu)
+          canvas.insertAt(img, 0);
           canvas.renderAll();
         });
       };
@@ -161,18 +192,22 @@ const MemeEditor = () => {
     }
   };
 
-  // Thêm văn bản
+  // Thêm văn bản với positioning ngẫu nhiên
   const addText = () => {
     if (textInput.trim() && canvas) {
       const text = new fabric.Text(textInput, {
-        left: 100,
-        top: 100,
+        left: Math.random() * (canvasSize.width - 200),
+        top: Math.random() * (canvasSize.height - 100),
         fontFamily: 'Arial',
         fontSize: fontSize,
         fill: textColor,
         stroke: '#ffffff',
         strokeWidth: 2,
-        shadow: 'rgba(0,0,0,0.3) 2px 2px 2px'
+        shadow: 'rgba(0,0,0,0.3) 2px 2px 2px',
+        selectable: true,
+        hasControls: true,
+        cornerSize: 10,
+        transparentCorners: false
       });
       
       canvas.add(text);
@@ -182,32 +217,44 @@ const MemeEditor = () => {
     }
   };
 
-  // Thêm sticker từ URL (API)
+  // Thêm sticker từ URL (API) với error handling
   const addStickerFromUrl = (url) => {
     if (canvas) {
       fabric.Image.fromURL(url, (img) => {
-        img.scale(0.5); // Scale down sticker
-        img.set({
-          left: 150,
-          top: 150,
-          selectable: true,
-          hasControls: true
-        });
-        
-        canvas.add(img);
-        canvas.setActiveObject(img);
-        canvas.renderAll();
-      });
+        if (img && img.width && img.height) {
+          // Scale theo kích thước canvas
+          const maxSize = Math.min(canvasSize.width, canvasSize.height) * 0.2;
+          const scale = Math.min(maxSize / img.width, maxSize / img.height);
+          
+          img.scale(scale);
+          img.set({
+            left: Math.random() * (canvasSize.width - img.width * scale),
+            top: Math.random() * (canvasSize.height - img.height * scale),
+            selectable: true,
+            hasControls: true,
+            cornerSize: 10,
+            transparentCorners: false
+          });
+          
+          canvas.add(img);
+          canvas.setActiveObject(img);
+          canvas.renderAll();
+        }
+      }, { crossOrigin: 'anonymous' });
     }
   };
 
-  // Thêm emoji sticker
+  // Thêm emoji sticker với positioning ngẫu nhiên
   const addSticker = (sticker) => {
     if (canvas) {
       const text = new fabric.Text(sticker, {
-        left: 150,
-        top: 150,
-        fontSize: 50
+        left: Math.random() * (canvasSize.width - 100),
+        top: Math.random() * (canvasSize.height - 100),
+        fontSize: 50,
+        selectable: true,
+        hasControls: true,
+        cornerSize: 10,
+        transparentCorners: false
       });
       
       canvas.add(text);
@@ -242,24 +289,34 @@ const MemeEditor = () => {
         case 'contrast':
           activeObject.filters.push(new fabric.Image.filters.Contrast({ contrast: 0.3 }));
           break;
+        case 'none':
+          // Không thêm filter nào
+          break;
       }
 
       activeObject.applyFilters();
       canvas.renderAll();
+      setSelectedFilter(filterType);
+    } else if (filterType !== 'none') {
+      // Thông báo cho user nếu chưa chọn ảnh
+      alert('Vui lòng chọn một ảnh trước khi áp dụng hiệu ứng!');
+    } else {
+      setSelectedFilter(filterType);
     }
-    setSelectedFilter(filterType);
   };
 
-  // Xuất ảnh
+  // Xuất ảnh với chất lượng cao và tên file có timestamp
   const exportImage = () => {
     if (canvas) {
       const dataURL = canvas.toDataURL({
         format: 'png',
-        quality: 1
+        quality: 1,
+        multiplier: 2 // Tăng độ phân giải gấp đôi
       });
       
       const link = document.createElement('a');
-      link.download = 'meme.png';
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+      link.download = `meme-${timestamp}.png`;
       link.href = dataURL;
       link.click();
     }
@@ -276,12 +333,36 @@ const MemeEditor = () => {
     }
   };
 
-  // Xóa tất cả
+  // Xóa tất cả với xác nhận
   const clearCanvas = () => {
-    if (canvas) {
+    if (canvas && objectCount > 0) {
+      if (window.confirm('Bạn có chắc chắn muốn xóa tất cả đối tượng trên canvas?')) {
+        canvas.clear();
+        canvas.backgroundColor = '#f0f0f0';
+        canvas.renderAll();
+      }
+    } else if (canvas) {
       canvas.clear();
       canvas.backgroundColor = '#f0f0f0';
       canvas.renderAll();
+    }
+  };
+
+  // Copy/duplicate đối tượng được chọn
+  const duplicateSelected = () => {
+    if (canvas) {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject) {
+        activeObject.clone((cloned) => {
+          cloned.set({
+            left: cloned.left + 20,
+            top: cloned.top + 20,
+          });
+          canvas.add(cloned);
+          canvas.setActiveObject(cloned);
+          canvas.renderAll();
+        });
+      }
     }
   };
 
@@ -440,6 +521,32 @@ const MemeEditor = () => {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Khu vực canvas */}
+          <div className="lg:w-2/3">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold text-blue-800 mb-2">🎯 Hướng dẫn sử dụng:</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• Kéo thả để di chuyển đối tượng</li>
+                  <li>• Click để chọn, kéo góc để thay đổi kích thước</li>
+                  <li>• Nhấn Delete/Backspace để xóa đối tượng đã chọn</li>
+                  <li>• Chọn ảnh trước khi áp dụng hiệu ứng</li>
+                  <li>• Canvas tự động thay đổi kích thước theo màn hình</li>
+                  <li>• Kích thước hiện tại: {canvasSize.width} x {canvasSize.height}px</li>
+                  <li>• Số đối tượng trên canvas: {objectCount}</li>
+                </ul>
+              </div>
+              <div className="canvas-wrapper">
+                <canvas
+                  ref={canvasRef}
+                  className="border border-gray-300 max-w-full rounded-lg shadow-sm"
+                />
+              </div>
+            </div>
+
+            <br/>
 
             {/* Thao tác */}
             <div className="bg-white p-4 rounded-lg shadow">
@@ -458,34 +565,17 @@ const MemeEditor = () => {
                   Xóa tất cả
                 </button>
                 <button
-                  onClick={exportImage}
+                  onClick={duplicateSelected}
                   className="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
+                >
+                  Sao chép đối tượng
+                </button>
+                <button
+                  onClick={exportImage}
+                  className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
                 >
                   Tải xuống
                 </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Khu vực canvas */}
-          <div className="lg:w-2/3">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                <h4 className="font-semibold text-blue-800 mb-2">🎯 Hướng dẫn sử dụng:</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• Kéo thả để di chuyển đối tượng</li>
-                  <li>• Click để chọn, kéo góc để thay đổi kích thước</li>
-                  <li>• Nhấn Delete/Backspace để xóa đối tượng đã chọn</li>
-                  <li>• Chọn ảnh trước khi áp dụng hiệu ứng</li>
-                  <li>• Canvas tự động thay đổi kích thước theo màn hình</li>
-                  <li>• Kích thước hiện tại: {canvasSize.width} x {canvasSize.height}px</li>
-                </ul>
-              </div>
-              <div className="canvas-wrapper">
-                <canvas
-                  ref={canvasRef}
-                  className="border border-gray-300 max-w-full rounded-lg shadow-sm"
-                />
               </div>
             </div>
           </div>
