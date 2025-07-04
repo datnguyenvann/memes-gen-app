@@ -822,7 +822,29 @@ convert -delay ${Math.round(gifDelay/10)} -loop 0 frame-*.png output.gif`;
                 ))}
               </div>
             </div>
+          </div>
 
+          {/* Khu vực canvas */}
+          <div className="lg:w-2/3">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                <h4 className="font-semibold text-blue-800 mb-2">🎯 Hướng dẫn sử dụng:</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• <strong>Ảnh tĩnh:</strong> Tải ảnh, thêm text/sticker, áp dụng hiệu ứng, tải xuống</li>
+                  <li>• <strong>GIF động:</strong> Sử dụng Auto Generate hoặc thêm frame thủ công</li>
+                  <li>• Kéo thả để di chuyển đối tượng, kéo góc để thay đổi kích thước</li>
+                  <li>• Nhấn Delete/Backspace để xóa đối tượng đã chọn</li>
+                  <li>• Chọn ảnh trước khi áp dụng hiệu ứng</li>
+                  <li>• Canvas: {canvasSize.width} x {canvasSize.height}px • Đối tượng: {objectCount}</li>
+                </ul>
+              </div>
+              <div className="canvas-wrapper">
+                <canvas
+                  ref={canvasRef}
+                  className="border border-gray-300 max-w-full rounded-lg shadow-sm"
+                />
+              </div>
+            </div>
             {/* GIF Controls */}
             <div className="bg-white p-4 rounded-lg shadow">
               <h3 className="text-lg font-semibold mb-3">🎬 Tạo GIF</h3>
@@ -1012,29 +1034,6 @@ convert -delay ${Math.round(gifDelay/10)} -loop 0 frame-*.png output.gif`;
                 >
                   📥 Tải xuống ảnh
                 </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Khu vực canvas */}
-          <div className="lg:w-2/3">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-                <h4 className="font-semibold text-blue-800 mb-2">🎯 Hướng dẫn sử dụng:</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• <strong>Ảnh tĩnh:</strong> Tải ảnh, thêm text/sticker, áp dụng hiệu ứng, tải xuống</li>
-                  <li>• <strong>GIF động:</strong> Sử dụng Auto Generate hoặc thêm frame thủ công</li>
-                  <li>• Kéo thả để di chuyển đối tượng, kéo góc để thay đổi kích thước</li>
-                  <li>• Nhấn Delete/Backspace để xóa đối tượng đã chọn</li>
-                  <li>• Chọn ảnh trước khi áp dụng hiệu ứng</li>
-                  <li>• Canvas: {canvasSize.width} x {canvasSize.height}px • Đối tượng: {objectCount}</li>
-                </ul>
-              </div>
-              <div className="canvas-wrapper">
-                <canvas
-                  ref={canvasRef}
-                  className="border border-gray-300 max-w-full rounded-lg shadow-sm"
-                />
               </div>
             </div>
           </div>
